@@ -4,22 +4,17 @@ const {adminAuth, userAuth} = require("./src/middleware/auth");
 const connectDb = require ('./src/config/database');
 const User = require('./src/models/user');
 
+//using the middleware provided to us by Express for converting json objects to js objects
+app.use(express.json());
+
 app.post("/signup", async (req, res)=> {
     try{
-        const userObj = {
-            firstName: "Pranav",
-            lastName: "Patel",
-            emailId: "pranav@patel.com",
-            password: "123"
-        }
-        //creating a new instance of the User model
-        const user = new User(userObj);
-
-        //a new document will be created in the db
+        // creating a new instance of the User model
+        const user = new User(req.body);
         await user.save();
-        res.send("User created successfully")
+        res.send("User details saved successfully.");
     } catch (err){
-        res.status(400).send("Could not save the user deatils." + err.message);
+        res.status(400).send("An Error Occurred" + err.message);
     }
     
 });
