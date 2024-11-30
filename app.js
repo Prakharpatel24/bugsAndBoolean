@@ -3,36 +3,57 @@ const app = express();
 const { adminAuth, userAuth } = require("./src/middleware/auth");
 const connectDb = require('./src/config/database');
 const User = require('./src/models/user');
+require('dotenv').config();
 
 //using the middleware provided to us by Express for converting json objects to js objects
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
     try {
-        // creating a new instance of the User model
-        const user = new User(req.body);
-        await user.save();
-        res.send("User details saved successfully.");
+        const reqEmailId = req.body.emailId;
+        console.log(reqEmailId);
+        const duplicateEmail = await User.find({ emailId: reqEmailId });
+        console.log(duplicateEmail);
+        if (duplicateEmail.length != 0) {
+            res.status(500).send('User already exists with the same email.');
+        } else {
+            // creating a new instance of the User model
+            const user = new User(req.body);
+            await user.save();
+            res.send("User details saved successfully.");
+        }
     } catch (err) {
-        res.status(400).send("An Error Occurred" + err.message);
+        res.status(400).send("An Error Occurred, " + err.message);
     }
 });
 
+// app.get("/find", async (req, res) => {
+//     try {
+//         const userEmail = req.body;
+//         //.find() returns an arrray of objects which matches the filter.
+//         const users = await User.find(userEmail);
+//         if (users.length === 0) {
+//             res.status(404).send("User not found");
+//         } else {
+//             res.send(users);
+//         }
+//     } catch (err) {
+//         res.status(500).send("Something went wrong");
+//     }
+// });
+
 app.get("/find", async (req, res) => {
     try {
-        const userEmail = req.body;
-        //.find() returns an arrray of objects which matches the filter.
-        const users = await User.find(userEmail);
+        const users = await User.find(req.body).select("+password -firstName");
         if (users.length === 0) {
             res.status(404).send("User not found");
         } else {
             res.send(users);
         }
     } catch (err) {
-        res.status(500).send("Something went wrong");
+        res.status(500).send("Something went wrong, " + err.message);
     }
-});
-
+})
 app.get("/findOne", async (req, res) => {
     try {
         const userEmail = req.body;
@@ -42,57 +63,87 @@ app.get("/findOne", async (req, res) => {
         } else {
             res.send(user);
         }
-    }catch (err) {
+    } catch (err) {
         res.status(500).send("Something went wrong");
     }
 });
 
-app.get("/getById", async (req, res)=> {
+app.get("/getById", async (req, res) => {
     const user = await User.findById("67396e2e14fbd6cd495f5c88");
-    if(!user) res.status(404).send("User not found");
+    if (!user) res.status(404).send("User not found");
     else res.send(user);
 });
 
-app.get("/feed", async (req, res)=> {
-    try{
+app.get("/feed", async (req, res) => {
+    try {
         const users = await User.find({});
-        if(users.length===0){
+        if (users.length === 0) {
             res.status(404).send("No data found");
-        } else{
+        } else {
             res.send(users);
         }
-    } catch{
+    } catch {
         res.status(500).send("Something went wrong");
-    }
-}); 
-
-app.delete("/user", async (req, res) => {
-    const userId = req.body;
-    try{
-        // const deletedUser = await User.findByIdAndDelete(userId);
-        const deletedUser = await User.findOneAndDelete({_id: userId});
-        res.send("User deleted Successfully");
-    } catch{
-        res.status(500).send("Something went wrong"); 
     }
 });
 
-app.patch("/user", async (req, res) => {
-    const {filter , update} = req.body;
-
-    console.log(filter, update);
-    
-    try{
-        // const updatedUser = await User.findOneAndUpdate(filter, update, { new: true});
-        const updatedUser = await User.findByIdAndUpdate(filter, update, {new: true});
-        console.log(updatedUser, "updatedUser");
-        
-        res.send("User updated successfully");
-    }catch (err){
-        res.status(500).send("Something went wrong"); 
-        console.error(err);
+app.delete("/user", async (req, res) => {
+    const userId = req.body;
+    try {
+        // const deletedUser = await User.findByIdAndDelete(userId);
+        const deletedUser = await User.findOneAndDelete({ _id: userId });
+        res.send("User deleted Successfully");
+    } catch {
+        res.status(500).send("Something went wrong");
     }
-})
+});
+
+// app.patch("/user", async (req, res) => {
+//     const { filter, update } = req.body;
+//     console.log(filter, update);
+//     try {
+//         if (update.emailId) {
+//             return res.status(403).send("Updating the email address is not allowed.");
+//         } else if (!Object.keys(update).every(key => process.env.ALLOWED_UPDATES.split(",").includes(key))) {
+//             return res.status(403).send('Not authorized to update this field');
+//         } else {
+//             // const updatedUser = await User.findOneAndUpdate(filter, update, { new: true});
+//             const updatedUser = await User.findByIdAndUpdate(filter, update, { new: true });
+//             console.log(updatedUser, "updatedUser");
+
+//             res.send("User updated successfully");
+//         }
+//     } catch (err) {
+//         res.status(500).send("Something went wrong");
+//         console.error(err);
+//     }
+// });
+
+app.patch("/user/:email", async (req, res) => {
+    const userId = req.params?.userId;
+    const updates = req.body;
+    try {
+        if (Object.keys(req.body).every((key) => process.env.ALLOWED_UPDATES.includes(key))) {
+            const existingUser = await User.findOne({ userId });
+            if (existingUser) {
+                console.log(existingUser);
+                for (const key in updates) {
+                    if (existingUser[key] && existingUser[key].toString().toLowerCase() === updates[key].toString().toLowerCase()) {
+                        return res.status(400).send(`The value of ${key} is already ${updates[key]}`);
+                    }
+                }
+            }
+            const updatedUser = await User.findOneAndUpdate({ userId }, req.body, { next: true });
+            res.send('Updated successfully');
+        } else {
+            res.status(401).send('Not authorized to update this field.');
+        }
+    } catch (err) {
+        res.status(500).send('Something went wrong.')
+        console.log('Something went wrong ' + err.message);
+    }
+});
+
 
 connectDb()
     .then(
@@ -100,4 +151,4 @@ connectDb()
         app.listen(7777, () => {
             console.log("Server is successfully running at port 7777!");
         }))
-    .catch(e => { console.log("An error occured while connecting to the database") });
+    .catch(e => { console.log("An error occured while connecting to the database") + e.message });
