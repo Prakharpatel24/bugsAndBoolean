@@ -119,12 +119,12 @@ app.delete("/user", async (req, res) => {
 //     }
 // });
 
-app.patch("/user/:email", async (req, res) => {
+app.patch("/user/:userId", async (req, res) => {
     const userId = req.params?.userId;
     const updates = req.body;
     try {
         if (Object.keys(req.body).every((key) => process.env.ALLOWED_UPDATES.includes(key))) {
-            const existingUser = await User.findOne({ userId });
+            const existingUser = await User.findOne({ _id: userId });
             if (existingUser) {
                 console.log(existingUser);
                 for (const key in updates) {
@@ -133,7 +133,7 @@ app.patch("/user/:email", async (req, res) => {
                     }
                 }
             }
-            const updatedUser = await User.findOneAndUpdate({ userId }, req.body, { next: true });
+            const updatedUser = await User.findOneAndUpdate({ _id: userId }, req.body, { next: true });
             res.send('Updated successfully');
         } else {
             res.status(401).send('Not authorized to update this field.');
