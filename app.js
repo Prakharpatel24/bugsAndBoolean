@@ -4,21 +4,36 @@ const { adminAuth, userAuth } = require("./src/middleware/auth");
 const connectDb = require('./src/config/database');
 const User = require('./src/models/user');
 require('dotenv').config();
+const bcrypt = require('bcrypt');
+const validator = require('validator');
+const {checkForStrongPassword} = require('./utils/helper');
 
 //using the middleware provided to us by Express for converting json objects to js objects
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
     try {
-        const reqEmailId = req.body.emailId;
-        console.log(reqEmailId);
-        const duplicateEmail = await User.find({ emailId: reqEmailId });
-        console.log(duplicateEmail);
+        const { firstName, lastName, age, emailId, password, gender, about, photoURL, skills } = req.body;
+        const duplicateEmail = await User.find({ emailId });
         if (duplicateEmail.length != 0) {
             res.status(500).send('User already exists with the same email.');
+        } else if(!checkForStrongPassword(password)){
+            res.status(500).send('Please enter a strong password.');
         } else {
+            //hashing the password
+            const encryptedPassword = await bcrypt.hash(password, 10);
             // creating a new instance of the User model
-            const user = new User(req.body);
+            const user = new User({
+                firstName,
+                lastName,
+                age,
+                emailId,
+                password: encryptedPassword,
+                gender,
+                about,
+                photoURL,
+                skills
+            });
             await user.save();
             res.send("User details saved successfully.");
         }
@@ -26,6 +41,32 @@ app.post("/signup", async (req, res) => {
         res.status(400).send("An Error Occurred, " + err.message);
     }
 });
+
+app.post("/login", async (req, res) => {
+    try {
+        const { emailId, password } = req.body;
+        console.log(emailId);
+        
+        //validating the emailId
+        if(!validator.isEmail(emailId)){
+            res.status(500).send('Enter a valid email address.');
+        }
+        //check if the user exists in the db
+        const user = await User.findOne({emailId});
+        if(!user){
+            res.status(500).send('Invalid credentials');
+        }
+        //comparing the hash
+        const validatePassword = await bcrypt.compare(password, user.password);
+        if(validatePassword){
+            res.send("Login Successful!");
+        } else{
+            res.status(500).send('Invalid credentials');
+        }
+    } catch(err){
+        console.log('Something went wrong, ' + err.message);   
+    }
+})
 
 // app.get("/find", async (req, res) => {
 //     try {
