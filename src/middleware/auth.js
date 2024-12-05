@@ -1,25 +1,30 @@
-const adminAuth = (req, res, next)=> {
-    const token = "qwerty";
-    const isAdminAuth = token ==="ytrewq";
-    if(!isAdminAuth){
-        res.status(500).send("Invalid request. User not authorized");
-    }
-    else{
-        next();
-    }
-};
+const User = require("../models/user");
+const jwt = require("jsonwebtoken");
+require('dotenv').config();
+const userAuth = async (req, res, next) => {
+    try{
+        const cookie = req.cookies;
+        if(!cookie){
+            throw new Error("Cookie not found. Please log in again.");
+        }
+        const {token} = cookie;
+        if(!token){
+            throw new Error('Token is not valid');
+        }
+        const decode = await jwt.verify(token, process.env.PRIVATE_KEY);
+        const {_id} = decode;
 
-const userAuth = (req, res, next) => {
-    const token = "abcd";
-    const isUserAuth = token === "dcba";
-    if(!userAuth){
-        res.status(500).send("Invalid request. User not authorized");
-    } else{
-        next();
+        const user = await User.findById(_id);
+        if(!user){
+            throw new Error('User not found');
+        }
+        req.user = user;
+    } catch(err){
+        res.status(500).send("Error: " + err.message);
     }
+    next();
 };
 
 module.exports = {
-    adminAuth,
     userAuth
 }

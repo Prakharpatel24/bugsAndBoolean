@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 require('dotenv').config();
+const jwt = require("jsonwebtoken");
+const bcrypt = require('bcrypt');
+
 const userSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId
@@ -23,8 +26,8 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         validate(value) {
-            if (!validator.isEmail(value)){
-                throw new Error( 'Invalid email address: ' + value);
+            if (!validator.isEmail(value)) {
+                throw new Error('Invalid email address: ' + value);
             }
         }
     },
@@ -37,7 +40,7 @@ const userSchema = new mongoose.Schema({
         required: true,
         validate: {
             validator: function (value) {
-                return value > 18;
+                return value >= 18;
             },
             message: 'You must be more than 18 years for signing up. Thank you for your interest in TechMate'
         }
@@ -45,7 +48,7 @@ const userSchema = new mongoose.Schema({
     gender: {
         type: String,
         validate: {
-            validator: function(value){
+            validator: function (value) {
                 const genders = ['Male', 'Female', 'Others'];
                 return genders.some(item => item.includes(value));
             },
@@ -60,8 +63,8 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: "https://isobarscience-1bfd8.kxcdn.com/wp-content/uploads/2020/09/default-profile-picture1.jpg",
         validate: {
-            validator: function (value){
-                if(!validator.isURL(value)){
+            validator: function (value) {
+                if (!validator.isURL(value)) {
                     throw new Error('Invalid URL, please try again!');
                 }
             }
@@ -95,5 +98,18 @@ userSchema.pre('save', function (next) {
     }
     next();
 });
+
+userSchema.methods.getJWT = async function () {
+    const user = this;
+    const token = await jwt.sign({ _id: user._id }, process.env.PRIVATE_KEY, { expiresIn: '7d' });
+    return token;
+}
+
+userSchema.methods.validatePassword = async function (passwordEntered){
+    const user = this;
+    const savedPassword = user.password;
+    const isPasswordMatch = await bcrypt.compare(passwordEntered, savedPassword);
+    return isPasswordMatch;
+}
 
 module.exports = mongoose.model("User", userSchema);

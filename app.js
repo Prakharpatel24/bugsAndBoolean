@@ -1,24 +1,27 @@
 const express = require("express");
 const app = express();
-const { adminAuth, userAuth } = require("./src/middleware/auth");
+const { userAuth } = require("./src/middleware/auth");
 const connectDb = require('./src/config/database');
 const User = require('./src/models/user');
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const validator = require('validator');
-const {checkForStrongPassword} = require('./utils/helper');
+const { checkForStrongPassword } = require('./utils/helper');
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 //using the middleware provided to us by Express for converting json objects to js objects
 app.use(express.json());
+app.use(cookieParser());
 
 app.post("/signup", async (req, res) => {
     try {
         const { firstName, lastName, age, emailId, password, gender, about, photoURL, skills } = req.body;
         const duplicateEmail = await User.find({ emailId });
         if (duplicateEmail.length != 0) {
-            res.status(500).send('User already exists with the same email.');
-        } else if(!checkForStrongPassword(password)){
-            res.status(500).send('Please enter a strong password.');
+            throw new Error('User already exists with the same email.');
+        } else if (!checkForStrongPassword(password)) {
+            throw new Error('Please enter a strong password.');
         } else {
             //hashing the password
             const encryptedPassword = await bcrypt.hash(password, 10);
@@ -38,35 +41,54 @@ app.post("/signup", async (req, res) => {
             res.send("User details saved successfully.");
         }
     } catch (err) {
-        res.status(400).send("An Error Occurred, " + err.message);
+        res.status(500).send('ERROR: ' + err.message)
     }
 });
 
 app.post("/login", async (req, res) => {
     try {
         const { emailId, password } = req.body;
-        console.log(emailId);
-        
         //validating the emailId
-        if(!validator.isEmail(emailId)){
-            res.status(500).send('Enter a valid email address.');
+        if (!validator.isEmail(emailId)) {
+            throw new Error('Enter a valid email address.')
         }
         //check if the user exists in the db
-        const user = await User.findOne({emailId});
-        if(!user){
-            res.status(500).send('Invalid credentials');
+        const user = await User.findOne({ emailId });
+        if (!user) {
+            throw new Error('Invalid credentials');
         }
         //comparing the hash
-        const validatePassword = await bcrypt.compare(password, user.password);
-        if(validatePassword){
-            res.send("Login Successful!");
-        } else{
-            res.status(500).send('Invalid credentials');
+        const checkPassword = await user.validatePassword(password);
+        if (!checkPassword) {
+            throw new Error("Invalid credentials");
         }
-    } catch(err){
-        console.log('Something went wrong, ' + err.message);   
+        const token = await user.getJWT();
+        res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
+        res.send("Login Successful!");
+    } catch (err) {
+        res.status(500).send('ERROR: ' + err.message)
     }
-})
+});
+
+app.get("/profile", userAuth, async (req, res) => {
+    try {
+        //logic for getting all profiles.
+        const { user } = req;
+        res.send(user);
+    } catch (err) {
+        res.status(500).send('ERROR: ' + err.message)
+    }
+});
+
+app.post("/sendConnectionRequest", userAuth, (req, res) => {
+    try {
+        //logic for sending the connection request. 
+        const { user } = req;
+        res.send(user);
+    } catch (err) {
+        res.status(500).send('ERROR: ' + err.message)
+    }
+});
 
 // app.get("/find", async (req, res) => {
 //     try {
@@ -87,7 +109,7 @@ app.get("/find", async (req, res) => {
     try {
         const users = await User.find(req.body).select("+password -firstName");
         if (users.length === 0) {
-            res.status(404).send("User not found");
+            return res.status(404).send("User not found");
         } else {
             res.send(users);
         }
@@ -100,7 +122,7 @@ app.get("/findOne", async (req, res) => {
         const userEmail = req.body;
         const user = await User.findOne(userEmail);
         if (!user) {
-            res.status(404).send("User not found");
+            return res.status(404).send("User not found");
         } else {
             res.send(user);
         }
@@ -111,7 +133,7 @@ app.get("/findOne", async (req, res) => {
 
 app.get("/getById", async (req, res) => {
     const user = await User.findById("67396e2e14fbd6cd495f5c88");
-    if (!user) res.status(404).send("User not found");
+    if (!user) return res.status(404).send("User not found");
     else res.send(user);
 });
 
@@ -119,7 +141,7 @@ app.get("/feed", async (req, res) => {
     try {
         const users = await User.find({});
         if (users.length === 0) {
-            res.status(404).send("No data found");
+            return res.status(404).send("No data found");
         } else {
             res.send(users);
         }
@@ -167,7 +189,6 @@ app.patch("/user/:userId", async (req, res) => {
         if (Object.keys(req.body).every((key) => process.env.ALLOWED_UPDATES.includes(key))) {
             const existingUser = await User.findOne({ _id: userId });
             if (existingUser) {
-                console.log(existingUser);
                 for (const key in updates) {
                     if (existingUser[key] && existingUser[key].toString().toLowerCase() === updates[key].toString().toLowerCase()) {
                         return res.status(400).send(`The value of ${key} is already ${updates[key]}`);
