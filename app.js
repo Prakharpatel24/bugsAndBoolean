@@ -2,9 +2,10 @@ const express = require("express");
 const app = express();
 const connectDb = require('./src/config/database');
 const cookieParser = require("cookie-parser");
-const authRouter = require("./routes/auth");
-const profileRouter = require("./routes/profile");
-const requestRouter = require("./routes/request");
+const authRouter = require("./src/routes/auth");
+const profileRouter = require("./src/routes/profile");
+const requestRouter = require("./src/routes/request");
+const userRouter = require("./src/routes/user");
 
 //using the middleware provided to us by Express for converting json objects to js objects
 app.use(express.json());
@@ -12,8 +13,9 @@ app.use(cookieParser());
 
 //mounting routers 
 app.use("/auth", authRouter);
-app.use("/", profileRouter);
+app.use("/profile", profileRouter);
 app.use("/request", requestRouter);
+app.use("/user", userRouter);
 
 
 connectDb()

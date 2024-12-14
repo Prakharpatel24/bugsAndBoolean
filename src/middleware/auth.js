@@ -9,7 +9,7 @@ const userAuth = async (req, res, next) => {
         }
         const {token} = cookie;
         if(!token){
-            throw new Error('Token is not valid');
+            return res.status(500).send("Token is not valid");
         }
         const decode = await jwt.verify(token, process.env.PRIVATE_KEY);
         const {_id} = decode;
