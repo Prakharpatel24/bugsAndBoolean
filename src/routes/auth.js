@@ -41,28 +41,69 @@ authRouter.post("/login", async (req, res) => {
         const { emailId, password } = req.body;
         //validating the emailId
         if (!validator.isEmail(emailId)) {
-            throw new Error('Enter a valid email address.')
+            return res.send({
+                status: 400,
+                message: 'Bad Request',
+                data: null,
+                error: 'Enter a valid email address.' 
+            })
         }
         //check if the user exists in the db
-        const user = await User.findOne({ emailId });
+        const user = await User.findOne({ emailId },
+            [
+                "-_id",
+                "-createdAt",
+                "-updatedAt",
+                "-__v",
+            ]
+        );
         if (!user) {
-            throw new Error('Invalid credentials');
+            return res.send({
+                status: 400,
+                message: 'Bad Request',
+                data: null,
+                error: 'Invalid credentials' 
+            })
         }
+        const {firstName, lastName, gender, photoURL, skills} = user;
         //comparing the hash
         const checkPassword = await user.validatePassword(password);
         if (!checkPassword) {
-            throw new Error("Invalid credentials");
+            return res.send({
+                status: 400,
+                message: 'Bad Request',
+                data: null,
+                error: 'Invalid credentials' 
+            })
         }
         const token = await user.getJWT();
         res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
-        res.send("Login Successful!");
+
+        return res.send({
+            status: 200,
+            message: "Login Successful",
+            data: {
+                firstName,
+                lastName,
+                emailId,
+                gender, 
+                photoURL,
+                skills
+            },
+            error: null
+        })
     } catch (err) {
-        res.status(500).send('ERROR: ' + err.message)
+        return res.send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        })
     }
 });
 
 authRouter.post("/logout", (req, res) => {
-    res.cookie("token", null, {expires: new Date(Date.now())});
+    res.cookie("token", null, { expires: new Date(Date.now()) });
     res.send("Logged out successfully!");
 })
 
