@@ -51,7 +51,6 @@ authRouter.post("/login", async (req, res) => {
         //check if the user exists in the db
         const user = await User.findOne({ emailId },
             [
-                "-_id",
                 "-createdAt",
                 "-updatedAt",
                 "-__v",
