@@ -8,10 +8,28 @@ const bcrypt = require("bcrypt");
 profileRouter.get("/view", userAuth, async (req, res) => {
     try {
         //logic for getting all profiles.
-        const { user } = req;
-        res.send(user);
+        const { firstName, lastName, emailId, age, gender, photoURL, skills } = req?.user;
+        return res.status(200).send({
+            status: 200,
+            message: 'Successfuly fetched logged in user details.',
+            data: {
+                firstName,
+                lastName,
+                emailId,
+                age,
+                gender,
+                photoURL,
+                skills
+            },
+            error: null
+        })
     } catch (err) {
-        res.status(500).send('ERROR: ' + err.message);
+        return res.send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        })
     }
 });
 
