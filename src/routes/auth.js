@@ -41,7 +41,7 @@ authRouter.post("/login", async (req, res) => {
         const { emailId, password } = req.body;
         //validating the emailId
         if (!validator.isEmail(emailId)) {
-            return res.send({
+            return res.status(400).send({
                 status: 400,
                 message: 'Bad Request',
                 data: null,
@@ -57,7 +57,7 @@ authRouter.post("/login", async (req, res) => {
             ]
         );
         if (!user) {
-            return res.send({
+            return res.status(400).send({
                 status: 400,
                 message: 'Bad Request',
                 data: null,
@@ -68,7 +68,7 @@ authRouter.post("/login", async (req, res) => {
         //comparing the hash
         const checkPassword = await user.validatePassword(password);
         if (!checkPassword) {
-            return res.send({
+            return res.status(400).send({
                 status: 400,
                 message: 'Bad Request',
                 data: null,
@@ -78,7 +78,7 @@ authRouter.post("/login", async (req, res) => {
         const token = await user.getJWT();
         res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
 
-        return res.send({
+        return res.status(200).send({
             status: 200,
             message: "Login Successful",
             data: {
@@ -92,7 +92,7 @@ authRouter.post("/login", async (req, res) => {
             error: null
         })
     } catch (err) {
-        return res.send({
+        return res.status(500).send({
             status: 500,
             message: 'Internal Server Error',
             data: null,
