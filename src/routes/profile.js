@@ -45,12 +45,19 @@ profileRouter.post("/edit", userAuth, async (req, res) => {
             user[field] = req.body[field];
         });
         await user.save();
-        res.json({
+        res.status(201).send({
+            status: 201,
             message: `Succesfully updated ${user.firstName}'s profile.`,
-            data: user
-        })
+            data: user,
+            error: null
+        });
     } catch (err) {
-        res.status(500).send('ERROR: ' + err.message);
+        res.status(500).send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        });
     }
 });
 
