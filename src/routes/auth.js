@@ -43,9 +43,9 @@ authRouter.post("/login", async (req, res) => {
         if (!validator.isEmail(emailId)) {
             return res.status(400).send({
                 status: 400,
-                message: 'Bad Request',
+                message: 'Enter a valid email address.',
                 data: null,
-                error: 'Enter a valid email address.' 
+                error: 'Bad Request' 
             })
         }
         //check if the user exists in the db
@@ -59,9 +59,9 @@ authRouter.post("/login", async (req, res) => {
         if (!user) {
             return res.status(400).send({
                 status: 400,
-                message: 'Bad Request',
+                message: 'Invalid credentials',
                 data: null,
-                error: 'Invalid credentials' 
+                error: 'Bad Request' 
             })
         }
         const {firstName, lastName, gender, photoURL, skills} = user;
@@ -70,9 +70,9 @@ authRouter.post("/login", async (req, res) => {
         if (!checkPassword) {
             return res.status(400).send({
                 status: 400,
-                message: 'Bad Request',
+                message: 'Invalid credentials',
                 data: null,
-                error: 'Invalid credentials' 
+                error: 'Bad Request' 
             })
         }
         const token = await user.getJWT();
