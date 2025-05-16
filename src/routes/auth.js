@@ -64,7 +64,7 @@ authRouter.post("/login", async (req, res) => {
                 error: 'Bad Request' 
             })
         }
-        const {firstName, lastName, gender, photoURL, skills} = user;
+        const {firstName, lastName, age, gender, about, photoURL, skills} = user;
         //comparing the hash
         const checkPassword = await user.validatePassword(password);
         if (!checkPassword) {
@@ -85,7 +85,9 @@ authRouter.post("/login", async (req, res) => {
                 firstName,
                 lastName,
                 emailId,
+                age,
                 gender, 
+                about,
                 photoURL,
                 skills
             },
