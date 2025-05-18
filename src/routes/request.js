@@ -45,27 +45,48 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
 });
 
 requestRouter.post("/review/:status/:requestId", userAuth, async (req, res) => {
-    const { status, requestId } = req.params;
-    const loggedInUserId = req.user._id;
+    try {
+        const { status, requestId } = req.params;
+        const loggedInUserId = req.user._id;
 
-    const allowedParamStatus = ["accepted", "rejected"];
-    if (!allowedParamStatus.includes(status)) {
-        return res.status(400).json({ message: "Invalid status" });
+        const allowedParamStatus = ["accepted", "rejected"];
+        if (!allowedParamStatus.includes(status)) {
+            return res.status(400).send({
+                status: 400,
+                message: "Invalid status",
+                data: null,
+                error: "Invalid status"
+            });
+        }
+        const connectionRequest = await ConnectionRequest.findOne({
+            _id: requestId,
+            toUserId: loggedInUserId,
+            status: "interested"
+        });
+        if (!connectionRequest) {
+            return res.status(404).send({
+                status: 404,
+                message: "Connection Request does not exist",
+                data: null,
+                error: "Not Found."
+            });
+        }
+        connectionRequest.status = status;
+        await connectionRequest.save();
+        return res.status(200).send({
+            status: 200,
+            message: `Connection Request ${status} successfully.`,
+            data: connectionRequest,
+            error: null
+        });
+    } catch (err) {
+        return res.status(500).send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        })
     }
-    const connectionRequest = await ConnectionRequest.findOne({
-        _id: requestId,
-        toUserId: loggedInUserId,
-        status: "interested"
-    });
-    if (!connectionRequest) {
-        return res.status(400).json({ message: "Connection Request does not exist" });
-    }
-    connectionRequest.status = status;
-    await connectionRequest.save();
-    res.json({
-        message: `Connection Request ${status} successfully.`,
-        data: connectionRequest
-    });
 });
 
 module.exports = requestRouter;
