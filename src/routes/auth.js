@@ -10,9 +10,19 @@ authRouter.post("/signup", async (req, res) => {
         const { firstName, lastName, age, emailId, password, gender, about, photoURL, skills } = req.body;
         const duplicateEmail = await User.find({ emailId });
         if (duplicateEmail.length != 0) {
-            throw new Error('User already exists with the same email.');
+            res.status(400).send({
+                status: 400,
+                message: "User already exists with the same email.",
+                data: null,
+                error: "Bad Request"
+            })
         } else if (!checkForStrongPassword(password)) {
-            throw new Error('Please enter a strong password.');
+            res.status(400).send({
+                status: 400,
+                message: "Please enter a strong password.",
+                data: null,
+                error: "Bad Request"
+            })
         } else {
             //hashing the password
             const encryptedPassword = await bcrypt.hash(password, 10);
@@ -29,10 +39,24 @@ authRouter.post("/signup", async (req, res) => {
                 skills
             });
             await user.save();
-            res.send("User details saved successfully.");
+
+            const token = await user.getJWT();
+            res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
+
+            res.status(201).send({
+                status: 201,
+                message: "User details saved successfully.",
+                data: user,
+                error: null
+            });
         }
     } catch (err) {
-        res.status(500).send('ERROR: ' + err.message)
+        return res.status(500).send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        })
     }
 });
 
