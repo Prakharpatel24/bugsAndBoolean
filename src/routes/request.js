@@ -13,10 +13,20 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
         const toUser = await User.findById(toUserId);
 
         if (!allowedParamStatus.includes(status)) {
-            return res.status(400).send("Invalid request");
+            return res.status(400).send({
+                status: 400,
+                message: "Invalid status",
+                data: null,
+                error: "Invalid status"
+            });
         };
         if (!toUser) {
-            return res.status(404).send("User does not exist");
+            return res.status(404).send({
+                status: 404,
+                message: "User does not exist",
+                data: null,
+                error: "Not Found."
+            });
         };
 
         //checking if userA has already sent a connection request to userB
@@ -28,7 +38,12 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
         });
 
         if (requestExists) {
-            return res.status(400).send("Connection request already exists");
+            return res.status(400).send({
+                status: 400,
+                message: "Connection request already exists",
+                data: null,
+                error: null
+            });
         }
 
         //creating a new instance of the connectionRequest model
@@ -38,9 +53,20 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
             status
         });
         const savedConnection = await connectionRequest.save();
-        res.send(savedConnection);
+        const statusForReturnMessage = status === "interested" ? "sent" : "rejected";
+        return res.status(200).send({
+            status: 200,
+            message: `Connection has been ${statusForReturnMessage} successfuly`,
+            data: savedConnection,
+            error: null
+        });
     } catch (err) {
-        res.status(500).send('ERROR: ' + err.message);
+        return res.status(500).send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        });
     }
 });
 
