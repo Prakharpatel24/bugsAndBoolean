@@ -7,6 +7,7 @@ const profileRouter = require("./src/routes/profile");
 const requestRouter = require("./src/routes/request");
 const userRouter = require("./src/routes/user");
 const cors = require("cors");
+require('dotenv').config();
 
 app.use(cors({
     origin: 'http://localhost:5173',
@@ -26,7 +27,7 @@ app.use("/user", userRouter);
 connectDb()
     .then(
         console.log("Successfully connected to the database"),
-        app.listen(7777, () => {
-            console.log("Server is successfully running at port 7777!");
+        app.listen(process.env.PORT, () => {
+            console.log("Server is successfully running!");
         }))
     .catch(e => { console.log("An error occured while connecting to the database") + e.message });
