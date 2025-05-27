@@ -8,6 +8,7 @@ const requestRouter = require("./src/routes/request");
 const userRouter = require("./src/routes/user");
 const cors = require("cors");
 require('dotenv').config();
+require("./utils/cronJob");
 
 app.use(cors({
     origin: 'http://localhost:5173',
