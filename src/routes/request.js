@@ -3,6 +3,7 @@ const requestRouter = express.Router();
 const { userAuth } = require("../middleware/auth");
 const ConnectionRequest = require("../models/connectionRequest");
 const User = require("../models/user");
+const sendEmail = require("../../utils/sendEmail");
 
 requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
     try {
@@ -53,6 +54,31 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
             status
         });
         const savedConnection = await connectionRequest.save();
+        if (status === "interested") {
+            const emailRes = await sendEmail.run(
+                "prakharpatel2001@gmail.com",
+                "noreply@bugsandboolean.com",
+                ` <html>
+                    <body>
+                        <h2>Hello,</h2>
+                        <p>You’ve received a new connection request from <strong>${toUser?.firstName}</strong>.</p>
+                        <p>They would like to connect with you on our platform.</p>
+                        <br />
+                        <p>Best regards,</p>
+                        <p>The Bugs&BooleanTeam</p>
+                    </body>
+                </html>`,
+                `
+                Hello,
+                You’ve received a new connection request from ${toUser?.firstName}.
+                They would like to connect with you on our platform.
+                Best regards,
+                The Bugs&Boolean Team
+                `,
+                "You’ve received a new connection request!"
+            );
+            // console.log(emailRes);
+        }
         const statusForReturnMessage = status === "interested" ? "sent" : "rejected";
         return res.status(200).send({
             status: 200,
