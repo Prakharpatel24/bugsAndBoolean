@@ -9,6 +9,9 @@ const userRouter = require("./src/routes/user");
 const cors = require("cors");
 require('dotenv').config();
 require("./utils/cronJob");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const initializeSocket = require("./utils/socketIO");
 
 app.use(cors({
     origin: 'http://localhost:5173',
@@ -25,10 +28,13 @@ app.use("/profile", profileRouter);
 app.use("/request", requestRouter);
 app.use("/user", userRouter);
 
+const httpServer = createServer(app);
+initializeSocket(httpServer);
+
 connectDb()
     .then(
         console.log("Successfully connected to the database"),
-        app.listen(process.env.PORT, () => {
+        httpServer.listen(process.env.PORT, () => {
             console.log("Server is successfully running!");
         }))
     .catch(e => { console.log("An error occured while connecting to the database") + e.message });
