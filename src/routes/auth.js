@@ -88,7 +88,7 @@ authRouter.post("/login", async (req, res) => {
                 error: 'Bad Request' 
             })
         }
-        const {firstName, lastName, age, gender, about, photoURL, skills} = user;
+        const {_id, firstName, lastName, age, gender, about, photoURL, skills} = user;
         //comparing the hash
         const checkPassword = await user.validatePassword(password);
         if (!checkPassword) {
@@ -106,6 +106,7 @@ authRouter.post("/login", async (req, res) => {
             status: 200,
             message: "Login Successful",
             data: {
+                _id,
                 firstName,
                 lastName,
                 emailId,
