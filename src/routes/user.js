@@ -3,6 +3,7 @@ const { userAuth } = require("../middleware/auth");
 const userRouter = express.Router();
 const ConnectionRequest = require("../models/connectionRequest");
 const User = require("../models/user");
+const Chat = require("../models/chat");
 require('dotenv').config();
 
 //GET all the pending user requests
@@ -67,4 +68,38 @@ userRouter.get("/feed", userAuth, async (req, res) => {
 
     res.send(users);
 });
+
+userRouter.get("/chat/:targetUserId", userAuth, async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const { targetUserId } = req.params;
+        let chat = await Chat.findOne({
+            participants: { $all: [loggedInUserId, targetUserId] }
+        }).populate({
+            path: "messages.senderId",
+            select: "firstName lastName photoURL"
+        });
+        if (!chat) {
+            chat = new Chat({
+                participants: [loggedInUserId, targetUserId],
+                messages: []
+            });
+            await chat.save();
+        }
+        return res.status(200).send({
+            status: 200,
+            message: 'Ok',
+            data: chat,
+            error: null
+        })
+    } catch (err) {
+        console.log("ERROR", err);
+        return {
+            status: 500,
+            message: 'Something went wrong',
+            data: null,
+            error: err.message
+        }
+    }
+})
 module.exports = userRouter;
