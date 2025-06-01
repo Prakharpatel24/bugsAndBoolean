@@ -54,7 +54,7 @@ requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
             status
         });
         const savedConnection = await connectionRequest.save();
-        if (status === "interested") {
+        if (status === "interested" && process.env.ENABLE_CRONJOBS === "true") {
             const emailRes = await sendEmail.run(
                 "prakharpatel2001@gmail.com",
                 "noreply@bugsandboolean.com",
