@@ -7,7 +7,21 @@ const validator = require("validator");
 
 authRouter.post("/signup", async (req, res) => {
     try {
-        const { firstName, lastName, age, emailId, password, gender, about, photoURL, skills } = req.body;
+        const {
+            firstName,
+            lastName,
+            age,
+            emailId,
+            password,
+            gender,
+            about,
+            photoURL,
+            skills,
+            githubUsername,
+            instagramUsername,
+            linkedInUsername,
+            xUsername
+        } = req.body;
         const duplicateEmail = await User.find({ emailId });
         if (duplicateEmail.length != 0) {
             res.status(400).send({
@@ -36,7 +50,11 @@ authRouter.post("/signup", async (req, res) => {
                 gender,
                 about,
                 photoURL,
-                skills
+                skills,
+                githubUsername,
+                instagramUsername,
+                linkedInUsername,
+                xUsername
             });
             await user.save();
 
@@ -69,7 +87,7 @@ authRouter.post("/login", async (req, res) => {
                 status: 400,
                 message: 'Enter a valid email address.',
                 data: null,
-                error: 'Bad Request' 
+                error: 'Bad Request'
             })
         }
         //check if the user exists in the db
@@ -85,10 +103,23 @@ authRouter.post("/login", async (req, res) => {
                 status: 400,
                 message: 'Invalid credentials',
                 data: null,
-                error: 'Bad Request' 
+                error: 'Bad Request'
             })
         }
-        const {_id, firstName, lastName, age, gender, about, photoURL, skills} = user;
+        const {
+            _id,
+            firstName,
+            lastName,
+            age,
+            gender,
+            about,
+            photoURL,
+            skills,
+            githubUsername,
+            instagramUsername,
+            linkedInUsername,
+            xUsername
+        } = user;
         //comparing the hash
         const checkPassword = await user.validatePassword(password);
         if (!checkPassword) {
@@ -96,7 +127,7 @@ authRouter.post("/login", async (req, res) => {
                 status: 400,
                 message: 'Invalid credentials',
                 data: null,
-                error: 'Bad Request' 
+                error: 'Bad Request'
             })
         }
         const token = await user.getJWT();
@@ -111,10 +142,14 @@ authRouter.post("/login", async (req, res) => {
                 lastName,
                 emailId,
                 age,
-                gender, 
+                gender,
                 about,
                 photoURL,
-                skills
+                skills,
+                githubUsername,
+                instagramUsername,
+                linkedInUsername,
+                xUsername
             },
             error: null
         })
