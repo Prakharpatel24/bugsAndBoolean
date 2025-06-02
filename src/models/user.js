@@ -70,7 +70,31 @@ const userSchema = new mongoose.Schema({
             }
         }
     },
-    skills: [String]
+    skills: [String],
+    githubUsername: {
+        type: String,
+        match: /^(?!-)(?!.*--)[a-zA-Z0-9-]{1,39}(?<!-)$/,
+        lowercase: true,
+        trim: true
+    },
+    instagramUsername: {
+        type: String,
+        match: /^(?!.*\.\.)(?!.*\.$)[a-zA-Z0-9._]{1,30}$/,
+        lowercase: true,
+        trim: true
+    },
+    linkedInUsername: {
+        type: String,
+        match: /^[a-zA-Z0-9-]{3,100}$/,
+        lowercase: true,
+        trim: true
+    },
+    xUsername: {
+        type: String,
+        match: /^[A-Za-z0-9_]{1,15}$/,
+        lowercase: true,
+        trim: true
+    },
 }, { timestamps: true });
 
 // userSchema.pre('save', function(next){
@@ -105,7 +129,7 @@ userSchema.methods.getJWT = async function () {
     return token;
 }
 
-userSchema.methods.validatePassword = async function (passwordEntered){
+userSchema.methods.validatePassword = async function (passwordEntered) {
     const user = this;
     const savedPassword = user.password;
     const isPasswordMatch = await bcrypt.compare(passwordEntered, savedPassword);
