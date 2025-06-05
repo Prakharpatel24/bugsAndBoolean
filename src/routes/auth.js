@@ -4,34 +4,27 @@ const User = require("../models/user");
 const bcrypt = require('bcrypt');
 const { checkForStrongPassword } = require("../../utils/helper");
 const validator = require("validator");
+const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
 
 authRouter.post("/signup", async (req, res) => {
     try {
         const {
             firstName,
             lastName,
-            age,
             emailId,
             password,
-            gender,
-            about,
-            photoURL,
-            skills,
-            githubUsername,
-            instagramUsername,
-            linkedInUsername,
-            xUsername
         } = req.body;
         const duplicateEmail = await User.find({ emailId });
         if (duplicateEmail.length != 0) {
-            res.status(400).send({
+            return res.status(400).send({
                 status: 400,
                 message: "User already exists with the same email.",
                 data: null,
                 error: "Bad Request"
             })
         } else if (!checkForStrongPassword(password)) {
-            res.status(400).send({
+            return res.status(400).send({
                 status: 400,
                 message: "Please enter a strong password.",
                 data: null,
@@ -44,24 +37,15 @@ authRouter.post("/signup", async (req, res) => {
             const user = new User({
                 firstName,
                 lastName,
-                age,
                 emailId,
                 password: encryptedPassword,
-                gender,
-                about,
-                photoURL,
-                skills,
-                githubUsername,
-                instagramUsername,
-                linkedInUsername,
-                xUsername
             });
             await user.save();
 
             const token = await user.getJWT();
             res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
 
-            res.status(201).send({
+            return res.status(201).send({
                 status: 201,
                 message: "User details saved successfully.",
                 data: user,
@@ -165,7 +149,122 @@ authRouter.post("/login", async (req, res) => {
 
 authRouter.post("/logout", (req, res) => {
     res.cookie("token", null, { expires: new Date(Date.now()) });
-    res.send("Logged out successfully!");
+    return res.send("Logged out successfully!");
+});
+
+authRouter.post("/signup-with-google", async (req, res) => {
+    try {
+        const { credential } = req.body.credentialResponse;
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        const { email, given_name, family_name, picture } = payload;
+        const duplicateEmail = await User.find({ emailId: email });
+        if (duplicateEmail.length != 0) {
+            return res.status(400).send({
+                status: 400,
+                message: "User already exists with the same email.",
+                data: null,
+                error: "Bad Request"
+            })
+        }
+        const user = new User({
+            firstName: given_name,
+            lastName: family_name,
+            emailId: email,
+            photoURL: picture,
+        });
+        await user.save();
+        const token = await user.getJWT();
+        res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
+        return res.status(201).send({
+            status: 201,
+            message: "User details saved successfully.",
+            data: user,
+            error: null
+        });
+    } catch (err) {
+        return res.status(500).send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        })
+    }
 })
+
+authRouter.post("/login-with-google", async (req, res) => {
+    try {
+        const { credential } = req.body.credentialResponse;
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        const { email } = payload;
+        const user = await User.findOne({ emailId: email },
+            [
+                "-createdAt",
+                "-updatedAt",
+                "-__v",
+            ]
+        );
+        if (!user) {
+            return res.status(400).send({
+                status: 400,
+                message: 'Invalid credentials',
+                data: null,
+                error: 'Bad Request'
+            })
+        }
+        const {
+            _id,
+            firstName,
+            lastName,
+            age,
+            gender,
+            about,
+            photoURL,
+            skills,
+            githubUsername,
+            instagramUsername,
+            linkedInUsername,
+            xUsername
+        } = user;
+        const token = await user.getJWT();
+        res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
+        return res.status(200).send({
+            status: 200,
+            message: "Login Successful",
+            data: {
+                _id,
+                firstName,
+                lastName,
+                email,
+                age,
+                gender,
+                about,
+                photoURL,
+                skills,
+                githubUsername,
+                instagramUsername,
+                linkedInUsername,
+                xUsername
+            },
+            error: null
+        })
+    } catch (err) {
+        return res.status(500).send({
+            status: 500,
+            message: 'Internal Server Error',
+            data: null,
+            error: err.message
+        })
+    }
+});
 
 module.exports = authRouter;
