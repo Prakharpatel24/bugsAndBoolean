@@ -33,17 +33,17 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        // required: true
     },
     age: {
         type: Number,
-        required: true,
-        validate: {
-            validator: function (value) {
-                return value >= 18;
-            },
-            message: 'You must be more than 18 years for signing up. Thank you for your interest in TechMate'
-        }
+        // required: true,
+        // validate: {
+        //     validator: function (value) {
+        //         return value >= 18;
+        //     },
+        //     message: 'You must be more than 18 years for signing up. Thank you for your interest in TechMate'
+        // }
     },
     gender: {
         type: String,
