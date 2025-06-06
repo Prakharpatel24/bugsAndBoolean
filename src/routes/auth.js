@@ -85,7 +85,7 @@ authRouter.post("/login", async (req, res) => {
         if (!user) {
             return res.status(400).send({
                 status: 400,
-                message: 'Invalid credentials',
+                message: "We couldn't log you in. Please try again or sign up.",
                 data: null,
                 error: 'Bad Request'
             })
@@ -154,7 +154,7 @@ authRouter.post("/logout", (req, res) => {
 
 authRouter.post("/signup-with-google", async (req, res) => {
     try {
-        const { credential } = req.body.credentialResponse;
+        const { credential } = req.body;
         const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         const ticket = await client.verifyIdToken({
             idToken: credential,
@@ -198,7 +198,7 @@ authRouter.post("/signup-with-google", async (req, res) => {
 
 authRouter.post("/login-with-google", async (req, res) => {
     try {
-        const { credential } = req.body.credentialResponse;
+        const { credential } = req.body;
         const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         const ticket = await client.verifyIdToken({
             idToken: credential,
@@ -216,7 +216,7 @@ authRouter.post("/login-with-google", async (req, res) => {
         if (!user) {
             return res.status(400).send({
                 status: 400,
-                message: 'Invalid credentials',
+                message: "We couldn't log you in. Please try again or sign up.",
                 data: null,
                 error: 'Bad Request'
             })
