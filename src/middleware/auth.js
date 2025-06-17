@@ -1,14 +1,16 @@
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
 require('dotenv').config();
+
 const userAuth = async (req, res, next) => {
-    try{
+    try {
         const cookie = req.cookies;
-        if(!cookie){
+        if (!cookie) {
             throw new Error("Cookie not found. Please log in again.");
         }
-        const {token} = cookie;
-        if(!token){
+        const { token } = cookie;
+        if (!token) {
             return res.status(401).send({
                 status: 401,
                 message: "Please Login.",
@@ -17,19 +19,22 @@ const userAuth = async (req, res, next) => {
             });
         }
         const decode = await jwt.verify(token, process.env.PRIVATE_KEY);
-        const {_id} = decode;
+        const { _id } = decode;
 
         const user = await User.findById(_id);
-        if(!user){
+        if (!user) {
             throw new Error('User not found');
         }
         req.user = user;
-    } catch(err){
+    } catch (err) {
         res.status(500).send("Error: " + err.message);
     }
     next();
 };
+const storage = multer.memoryStorage()
+const upload = multer({ storage })
 
 module.exports = {
-    userAuth
+    userAuth,
+    upload
 }
