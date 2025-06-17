@@ -37,6 +37,13 @@ const userSchema = new mongoose.Schema({
     },
     age: {
         type: Number,
+        default: null,
+        set: function (value) {
+            if(value === "null" || value === '' || value=== null) return null;
+            const n = Number(value);
+            if(Number.isNaN(n)) throw new Error('Age must be numeric');
+            return n;
+        }
         // required: true,
         // validate: {
         //     validator: function (value) {
@@ -47,6 +54,7 @@ const userSchema = new mongoose.Schema({
     },
     gender: {
         type: String,
+        default: '',
         validate: {
             validator: function (value) {
                 const genders = ['Male', 'Female', 'Others'];
@@ -57,6 +65,7 @@ const userSchema = new mongoose.Schema({
     },
     about: {
         type: String,
+        default: '',
         maxLength: 500
     },
     photoURL: {
@@ -73,24 +82,28 @@ const userSchema = new mongoose.Schema({
     skills: [String],
     githubUsername: {
         type: String,
+        default: '',
         match: /^(?!-)(?!.*--)[a-zA-Z0-9-]{1,39}(?<!-)$/,
         lowercase: true,
         trim: true
     },
     instagramUsername: {
         type: String,
+        default: '',
         match: /^(?!.*\.\.)(?!.*\.$)[a-zA-Z0-9._]{1,30}$/,
         lowercase: true,
         trim: true
     },
     linkedInUsername: {
         type: String,
+        default: '',
         match: /^[a-zA-Z0-9-]{3,100}$/,
         lowercase: true,
         trim: true
     },
     xUsername: {
         type: String,
+        default: '',
         match: /^[A-Za-z0-9_]{1,15}$/,
         lowercase: true,
         trim: true
@@ -105,9 +118,9 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', function (next) {
     const validNameRegex = /^[a-zA-Z\s'-]+$/;
     if (!validNameRegex.test(this.firstName) || !validNameRegex.test(this.lastName)) {
-        next(new Error('Invalid characters in name. Please try again!'));
+        return next(new Error('Invalid characters in name. Please try again!'));
     }
-    next();
+    return next();
 });
 // userSchema.pre('save', function (next) {
 //     if (!this.emailId.includes('@')) {
@@ -118,9 +131,9 @@ userSchema.pre('save', function (next) {
 
 userSchema.pre('save', function (next) {
     if (this.skills.length > 10) {
-        throw next(new Error('Cannot add more than 10 skills'));
+        return next(new Error('Cannot add more than 10 skills'));
     }
-    next();
+    return next();
 });
 
 userSchema.methods.getJWT = async function () {
