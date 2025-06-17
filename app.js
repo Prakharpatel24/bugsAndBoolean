@@ -20,6 +20,7 @@ app.use(cors({
 
 //using the middleware provided to us by Express for converting json objects to js objects
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 //mounting routers 
