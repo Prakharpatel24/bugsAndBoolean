@@ -1,7 +1,7 @@
 const validator = require('validator');
-
 const { Upload } = require("@aws-sdk/lib-storage");
 const { S3 } = require("@aws-sdk/client-s3");
+require('dotenv').config();
 
 const checkForStrongPassword = (password) => {
     return validator.isStrongPassword(password);
