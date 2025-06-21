@@ -21,13 +21,6 @@ const uploadFileToS3 = async (
 
         region: process.env.AWS_REGION,
     });
-    console.log({
-        fileBuffer,
-    bucketName,
-    key,
-    mimeType
-    });
-    
     const params = {
         Bucket: bucketName,
         Key: key,
