@@ -2,10 +2,11 @@ const express = require("express");
 const authRouter = express.Router();
 const User = require("../models/user");
 const bcrypt = require('bcrypt');
-const { checkForStrongPassword } = require("../../utils/helper");
+const { checkForStrongPassword, uploadFileToS3, getS3Url } = require("../../utils/helper");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
+const { default: axios } = require("axios");
 
 authRouter.post("/signup", async (req, res) => {
     try {
@@ -171,12 +172,31 @@ authRouter.post("/signup-with-google", async (req, res) => {
                 error: "Bad Request"
             })
         }
-        const user = new User({
+        let user = new User({
             firstName: given_name,
             lastName: family_name,
-            emailId: email,
-            photoURL: picture,
+            emailId: email
         });
+        let profileImageUrl = null;
+        if (picture) {
+            const highResPhotoURL = picture?.replace(/=s\d+-c$/, '=s400-c');
+            const response = await axios.get(highResPhotoURL, {
+                responseType: 'arraybuffer',
+            });
+            const buffer = Buffer.from(response.data, 'binary');
+            const bucketName = process.env.AWS_BUCKET;
+            const urlKey = `profile-pictures/${user?._id}.jpg`;
+            const mimeType = response.headers['content-type'] || 'image/jpeg';
+            const region = process.env.AWS_REGION;
+            await uploadFileToS3(
+                buffer,
+                bucketName,
+                urlKey,
+                mimeType
+            )
+            profileImageUrl = getS3Url(bucketName, region, urlKey);
+            user.photoURL = profileImageUrl
+        }
         await user.save();
         const token = await user.getJWT();
         res.cookie("token", token, { expires: new Date(Date.now() + 900000) });
