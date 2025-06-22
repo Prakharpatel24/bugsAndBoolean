@@ -185,7 +185,7 @@ authRouter.post("/signup-with-google", async (req, res) => {
             });
             const buffer = Buffer.from(response.data, 'binary');
             const bucketName = process.env.AWS_BUCKET;
-            const urlKey = `profile-pictures/${user?._id}.jpg`;
+            const urlKey = `${process.env.MODE}/profile-pictures/${user?._id}.jpg`;
             const mimeType = response.headers['content-type'] || 'image/jpeg';
             const region = process.env.AWS_REGION;
             await uploadFileToS3(

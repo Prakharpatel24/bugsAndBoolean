@@ -79,7 +79,7 @@ profileRouter.post("/edit", userAuth, upload.single('profileImage'), async (req,
                 });
             }
             // const urlKey = `profile-pictures/${Date.now()}_${profilePicture.originalname}`;
-            const urlKey = `profile-pictures/${user?._id}.jpg`;
+            const urlKey = `${process.env.MODE}/profile-pictures/${user?._id}.jpg`;
             const bucketName = process.env.AWS_BUCKET;
             const region = process.env.AWS_REGION;
             await uploadFileToS3(
